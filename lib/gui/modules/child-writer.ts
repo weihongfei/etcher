@@ -131,12 +131,23 @@ async function writeAndValidate(
 	return result;
 }
 
+type Source =
+	| typeof sdk.sourceDestination.File
+	| typeof sdk.sourceDestination.Http;
+interface SourceOptions {
+	imagePath: string;
+	SourceType: Source;
+	sourceParams?: any[];
+}
+
 interface WriteOptions {
 	imagePath: string;
 	destinations: DrivelistDrive[];
 	unmountOnSuccess: boolean;
 	validateWriteOnSuccess: boolean;
 	trim: boolean;
+	source: SourceOptions;
+	SourceType: keyof typeof sdk.sourceDestination;
 }
 
 ipc.connectTo(IPC_SERVER_ID, () => {
@@ -223,9 +234,13 @@ ipc.connectTo(IPC_SERVER_ID, () => {
 				options.unmountOnSuccess,
 			);
 		});
-		const source = new sdk.sourceDestination.File(
+		const {
+			SourceType,
+			source: { sourceParams },
+		} = options;
+		const source: Source = new sdk.sourceDestination[SourceType](
 			options.imagePath,
-			sdk.sourceDestination.File.OpenFlags.Read,
+			...(sourceParams || []),
 		);
 		try {
 			const results = await writeAndValidate(

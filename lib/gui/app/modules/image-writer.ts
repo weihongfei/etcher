@@ -133,6 +133,16 @@ interface FlashResults {
 	cancelled?: boolean;
 }
 
+type Source =
+	| typeof sdk.sourceDestination.File
+	| typeof sdk.sourceDestination.Http;
+
+interface SourceOptions {
+	imagePath: string;
+	SourceType: Source;
+	sourceParams?: any[];
+}
+
 /**
  * @summary Perform write operation
  *
@@ -143,6 +153,7 @@ export function performWrite(
 	image: string,
 	drives: DrivelistDrive[],
 	onProgress: sdk.multiWrite.OnProgressFunction,
+	source: SourceOptions,
 ): Promise<{ cancelled?: boolean }> {
 	let cancelled = false;
 	ipc.serve();
@@ -169,7 +180,7 @@ export function performWrite(
 			trim: settings.get('trim'),
 		};
 
-		ipc.server.on('fail', ({ error }) => {
+		ipc.server.on('fail', ({ error }: { error: Error & { code: string } }) => {
 			handleErrorLogging(error, analyticsData);
 		});
 
@@ -192,6 +203,8 @@ export function performWrite(
 			ipc.server.emit(socket, 'write', {
 				imagePath: image,
 				destinations: drives,
+				source,
+				SourceType: source.SourceType.name,
 				validateWriteOnSuccess: settings.get('validateWriteOnSuccess'),
 				trim: settings.get('trim'),
 				unmountOnSuccess: settings.get('unmountOnSuccess'),
@@ -253,6 +266,7 @@ export function performWrite(
 export async function flash(
 	image: string,
 	drives: DrivelistDrive[],
+	source: SourceOptions,
 ): Promise<void> {
 	if (flashState.isFlashing()) {
 		throw new Error('There is already a flash in progress');
@@ -282,6 +296,7 @@ export async function flash(
 			image,
 			drives,
 			flashState.setProgressState,
+			source,
 		);
 		flashState.unsetFlashingFlag(result);
 	} catch (error) {

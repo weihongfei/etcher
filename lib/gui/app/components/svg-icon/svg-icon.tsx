@@ -95,31 +95,36 @@ export class SVGIcon extends React.Component<SVGIconProps> {
 
 		if (!svgData) {
 			_.find(this.props.paths, relativePath => {
-				// This means the path to the icon should be
-				// relative to *this directory*.
-				// TODO: There might be a way to compute the path
-				// relatively to the `index.html`.
-				const imagePath = path.join(baseDirectory, 'assets', relativePath);
+				if (_.startsWith(relativePath, 'http')) {
+					svgData = relativePath;
+					return true;
+				} else {
+					// This means the path to the icon should be
+					// relative to *this directory*.
+					// TODO: There might be a way to compute the path
+					// relatively to the `index.html`.
+					const imagePath = path.join(baseDirectory, 'assets', relativePath);
 
-				const contents = _.attempt(() => {
-					return fs.readFileSync(imagePath, {
-						encoding: 'utf8',
+					const contents = _.attempt(() => {
+						return fs.readFileSync(imagePath, {
+							encoding: 'utf8',
+						});
 					});
-				});
 
-				if (_.isError(contents)) {
-					analytics.logException(contents);
+					if (_.isError(contents)) {
+						analytics.logException(contents);
+						return false;
+					}
+
+					const parsed = tryParseSVGContents(contents);
+
+					if (parsed) {
+						svgData = parsed;
+						return true;
+					}
+
 					return false;
 				}
-
-				const parsed = tryParseSVGContents(contents);
-
-				if (parsed) {
-					svgData = parsed;
-					return true;
-				}
-
-				return false;
 			});
 		}
 
