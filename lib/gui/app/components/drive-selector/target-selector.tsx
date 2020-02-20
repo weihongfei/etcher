@@ -133,6 +133,7 @@ export function TargetSelector(props: TargetSelectorProps) {
 
 	return (
 		<StepButton
+			primary
 			tabindex={targets.length > 0 ? -1 : 2}
 			disabled={props.disabled}
 			onClick={props.openDriveSelector}
